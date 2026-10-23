@@ -1,0 +1,21 @@
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+  server_tokens off;
+  gzip on; gzip_types text/css application/javascript application/json image/svg+xml; gzip_min_length 1024;
+
+  # Security headers. CSP allows only this origin + the API origin (images/XHR) + OpenStreetMap embeds.
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: ${API_ORIGIN}; font-src 'self'; connect-src 'self' ${API_ORIGIN}; frame-src https://www.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+  add_header X-Content-Type-Options nosniff always;
+  add_header Referrer-Policy strict-origin-when-cross-origin always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+  # Enable once the site is served over HTTPS:
+  # add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+  location = /healthz { access_log off; return 200 'ok'; add_header Content-Type text/plain; }
+  # Hashed build assets: cache for a year. index.html: never cache (so deploys take effect).
+  location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; add_header X-Content-Type-Options nosniff always; }
+  location / { try_files $uri /index.html; add_header Cache-Control "no-store"; add_header X-Content-Type-Options nosniff always; add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: ${API_ORIGIN}; font-src 'self'; connect-src 'self' ${API_ORIGIN}; frame-src https://www.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always; add_header Referrer-Policy strict-origin-when-cross-origin always; }
+}

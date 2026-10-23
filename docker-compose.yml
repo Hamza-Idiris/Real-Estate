@@ -1,0 +1,39 @@
+# Local/staging stack: MongoDB replica set (needed for transactions) + API + web.
+# Usage:  JWT_ACCESS_SECRET=... FILE_SIGNING_SECRET=... docker compose up --build
+# Seed demo data (non-production only):  docker compose exec api node -e "..."  or run `npm run seed` from your host with MONGO_URI pointing at localhost.
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports: ["127.0.0.1:27017:27017"]
+    volumes: ["mongo-data:/data/db"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+  api:
+    build: ./server
+    depends_on: { mongo: { condition: service_healthy } }
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/estateflow?replicaSet=rs0
+      USE_TRANSACTIONS: "true"
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET (>=32 chars)}
+      FILE_SIGNING_SECRET: ${FILE_SIGNING_SECRET:?set FILE_SIGNING_SECRET (>=32 chars)}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
+      TRUST_PROXY: "false"
+    ports: ["4000:4000"]
+    volumes: ["uploads:/data/uploads"]
+    restart: unless-stopped
+  web:
+    build:
+      context: ./web
+      args: { VITE_API_URL: "${PUBLIC_API_URL:-http://localhost:4000}" }
+    environment: { API_ORIGIN: "${PUBLIC_API_URL:-http://localhost:4000}" }
+    depends_on: [api]
+    ports: ["8080:80"]
+    restart: unless-stopped
+volumes: { mongo-data: {}, uploads: {} }

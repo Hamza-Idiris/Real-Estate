@@ -1,0 +1,28 @@
+name: estateflow
+description: EstateFlow mobile app — property discovery, viewings, applications and the tenant portal.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  http: ^1.2.2
+  provider: ^6.1.2
+  go_router: ^14.2.7
+  flutter_secure_storage: ^9.2.2
+  image_picker: ^1.1.2
+  intl: ^0.20.2
+  url_launcher: ^6.3.0
+  device_preview: ^1.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

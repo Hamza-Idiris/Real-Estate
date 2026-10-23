@@ -39,7 +39,14 @@ export function buildApp() {
   app.use(pinoHttp({ logger, genReqId: (req: any) => req.id, autoLogging: { ignore: (req) => req.url?.startsWith('/health') ?? false } }));
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } })); // listing images are embedded by the web/mobile apps
   app.use(cors({
-    origin: (origin, cb) => (!origin || corsOrigins.includes(origin) ? cb(null, true) : cb(null, false)),
+    origin: (origin, cb) => {
+      if (!origin || corsOrigins.includes(origin)) return cb(null, true);
+      // In development, allow localhost ports (e.g. Flutter Web random ports)
+      if (env.NODE_ENV === 'development' && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return cb(null, true);
+      }
+      return cb(null, false);
+    },
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], allowedHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-Request-Id'], maxAge: 600,
   }));
   app.use(compression());
